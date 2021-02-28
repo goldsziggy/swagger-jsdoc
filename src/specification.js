@@ -1,6 +1,7 @@
 const doctrine = require('doctrine');
 const parser = require('swagger-parser');
 const YAML = require('yaml');
+const mergeWith = require('lodash.mergewith');
 
 const {
   hasEmptyProperty,
@@ -95,7 +96,6 @@ function clean(swaggerObject) {
  */
 function finalize(swaggerObject, options) {
   let specification = swaggerObject;
-
   parser.parse(swaggerObject, (err, api) => {
     if (!err) {
       specification = api;
@@ -137,13 +137,14 @@ function organize(swaggerObject, annotation, property) {
     'parameters',
     'definitions',
   ];
-
   if (commonProperties.includes(property)) {
     for (const definition of Object.keys(annotation[property])) {
-      swaggerObject[property][definition] = {
-        ...swaggerObject[property][definition],
-        ...annotation[property][definition],
-      };
+      swaggerObject[property][definition] = mergeWith(
+        {},
+        swaggerObject[property][definition],
+        annotation[property][definition],
+        (a, b) => (b === null ? a : undefined)
+      );
     }
   } else if (property === 'tags') {
     const { tags } = annotation;
